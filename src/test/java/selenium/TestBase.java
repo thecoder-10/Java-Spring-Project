@@ -36,6 +36,24 @@ public class TestBase {
 
 	public static FileReader frInput;
 
+	/**
+	 * Sets up the Selenium WebDriver environment and loads configuration properties.
+	 * <p>
+	 * This method initializes the WebDriver for use in Selenium tests. It reads configuration,
+	 * locator, texts and photos, and input properties from the respective property files located
+	 * in the test directory. The WebDriver is only initialized if it has not been set yet.
+	 * </p>
+	 * <p>
+	 * Based on the "browser" property, this method configures the corresponding headless driver
+	 * (Chrome, Firefox, or Edge) with options including disabling GPU, setting the window size to 1920x1080,
+	 * and specifying the language as English. After driver initialization, the browser window is maximized and the
+	 * test URL is loaded. Finally, it locates the welcome photo element using a class name from the locators
+	 * properties and asserts that its "src" attribute matches the expected value from the texts and photos properties.
+	 * </p>
+	 *
+	 * @throws IOException if there is an error reading any of the property files.
+	 * @throws IllegalArgumentException if an unsupported browser is specified in the configuration.
+	 */
 	@Before
 	public void setUp() throws IOException {
 		String userDirectory = System.getProperty("user.dir");
@@ -90,6 +108,15 @@ public class TestBase {
 		org.junit.Assert.assertEquals(ActualWelcomePhotoSrc, expectedWelcomePhoto);
 	}
 
+	/**
+	 * Quits the WebDriver instance after test execution.
+	 *
+	 * <p>
+	 * This method is annotated with {@code @After} and is automatically executed
+	 * after each test case to clean up the testing environment by closing the browser
+	 * and releasing associated system resources.
+	 * </p>
+	 */
 	@After
 	public void tearDown() {
 		driver.quit();
