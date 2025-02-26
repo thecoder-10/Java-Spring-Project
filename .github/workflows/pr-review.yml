@@ -21,6 +21,6 @@ jobs:
         run: pip install google-generativeai requests
       - name: Run GPT Review
         env:
-          GEMENI_API_KEY: ${{ secrets.GEMENI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/scripts/review_pr.py
