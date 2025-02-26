@@ -2,6 +2,8 @@ import os
 import openai
 import requests
 import re
+import json
+import sys
 
 # Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
