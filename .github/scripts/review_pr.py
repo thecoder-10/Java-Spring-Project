@@ -1,56 +1,40 @@
 import os
-import openai
 import requests
-import re
+import json
 
-# Load API keys
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+# Load API Key from GitHub Secrets
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Get PR number and repo from GitHub Actions
-REPO = os.getenv("GITHUB_REPOSITORY")
-# Extract PR number from GitHub event payload
-GITHUB_EVENT_PATH = os.getenv("GITHUB_EVENT_PATH")
+if not GEMINI_API_KEY:
+    raise ValueError("❌ Missing Google Gemini API Key. Set GEMINI_API_KEY in GitHub Secrets.")
 
-with open(GITHUB_EVENT_PATH, "r") as f:
-    event_data = json.load(f)
-    PR_NUMBER = event_data["pull_request"]["number"]
+# Debug: Check API Key
+print(f"🔹 Loaded API Key: {GEMINI_API_KEY[:5]}... (truncated)")
 
-# Read PR diff
-with open("pr_diff.txt", "r") as f:
-    pr_diff = f.read()
+# API URL (pass API key in URL)
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
-# Extract changed Java files
-changed_java_files = re.findall(r"diff --git a/(.*\.java) b/.*", pr_diff)
+# Get PR diff from GitHub Actions
+pr_diff = os.getenv("PR_DIFF", "No PR diff found.")
 
-# Identify missing unit tests
-java_classes = [file.replace(".java", "") for file in changed_java_files if "/test/" not in file]
-test_classes = [file.replace(".java", "") for file in changed_java_files if "/test/" in file]
+# Request Payload
+data = {
+    "contents": [{
+        "parts": [{"text": f"Review this Java PR:\n{pr_diff}"}]
+    }]
+}
 
-missing_tests = [
-    cls for cls in java_classes if f"{cls}Test" not in test_classes and f"Test{cls}" not in test_classes
-]
+# Make API Request
+response = requests.post(API_URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
 
-missing_tests_feedback = ""
-if missing_tests:
-    missing_tests_feedback = f"\n⚠️ **Missing Tests:** The following classes might need unit tests:\n" + "\n".join(
-        f"- `{cls}.java`" for cls in missing_tests
-    )
+# Debug Response
+print(f"🔹 API Response: {response.status_code}")
+print(response.text)
 
-# Send diff to GPT for review
-response = openai.ChatCompletion.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": "You are a senior Java code reviewer. Focus on best practices, clean code, and missing unit tests."},
-        {"role": "user", "content": f"Review this Java code diff:\n\n{pr_diff}"}
-    ]
-)
-
-review_comment = response["choices"][0]["message"]["content"] + missing_tests_feedback
-
-# Post comment to GitHub PR
-comment_url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
-headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-data = {"body": review_comment}
-
-requests.post(comment_url, json=data, headers=headers)
+# Parse Response
+if response.status_code == 200:
+    result = response.json()
+    print("### PR Review Feedback ###")
+    print(result["candidates"][0]["content"]["parts"][0]["text"])
+else:
+    print(f"❌ API Error {response.status_code}: {response.text}")
