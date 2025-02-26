@@ -4,6 +4,7 @@ import requests
 import re
 import json
 import sys
+from openai import OpenAI
 
 # Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -40,7 +41,9 @@ if missing_tests:
     )
 
 # Send diff to GPT for review
-response = openai.ChatCompletion.create(
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+response = client.chat.completions.create(
     model="gpt-4",
     messages=[
         {"role": "system", "content": "You are a senior Java code reviewer. Focus on best practices, clean code, and missing unit tests."},
