@@ -44,7 +44,7 @@ if missing_tests:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 response = client.chat.completions.create(
-    model="gpt-4",
+    model="gpt-3.5-turbo",
     messages=[
         {"role": "system", "content": "You are a senior Java code reviewer. Focus on best practices, clean code, and missing unit tests."},
         {"role": "user", "content": f"Review this Java code diff:\n\n{pr_diff}"}
