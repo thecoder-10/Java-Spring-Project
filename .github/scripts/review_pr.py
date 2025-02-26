@@ -5,9 +5,12 @@ import re
 import json
 import sys
 from openai import OpenAI
+import google.generativeai as genai
+
 
 # Load API keys
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMENI_API_KEY = os.getenv("GEMENI_API_KEY")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # Get PR number and repo from GitHub Actions
@@ -41,17 +44,21 @@ if missing_tests:
     )
 
 # Send diff to GPT for review
-client = OpenAI(api_key=OPENAI_API_KEY)
+# client = OpenAI(api_key=OPENAI_API_KEY)
 
-response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "system", "content": "You are a senior Java code reviewer. Focus on best practices, clean code, and missing unit tests."},
-        {"role": "user", "content": f"Review this Java code diff:\n\n{pr_diff}"}
-    ]
-)
+# response = client.chat.completions.create(
+#     model="gpt-3.5-turbo",
+#     messages=[
+#         {"role": "system", "content": "You are a senior Java code reviewer. Focus on best practices, clean code, and missing unit tests."},
+#         {"role": "user", "content": f"Review this Java code diff:\n\n{pr_diff}"}
+#     ]
+# )
 
-review_comment = response["choices"][0]["message"]["content"] + missing_tests_feedback
+genai.configure(api_key="GEMENI_API_KEY")
+model = genai.GenerativeModel("gemini-pro")
+response = model.generate_content(f"Review this Java PR:\n{pr_diff}")
+
+review_comment = response.text
 
 # Post comment to GitHub PR
 comment_url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
