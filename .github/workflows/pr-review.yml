@@ -1,26 +1,28 @@
-name: Automated PR Review
+name: PR Review with Gemini AI
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  pr-review:
+  review:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Get PR Diff
-        run: git diff HEAD^ > pr_diff.txt
+      - name: Fetch PR Diff
+        run: |
+          PR_DIFF=$(gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }})
+          echo "PR_DIFF<<EOF" >> $GITHUB_ENV
+          echo "$PR_DIFF" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Dependencies
-        # run: pip install openai requests
-        run: pip install google-generativeai requests
-      - name: Run GPT Review
+      - name: Run PR Review Script
+        run: python .github/scripts/review_pr.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/review_pr.py
+          PR_DIFF: ${{ env.PR_DIFF }}
